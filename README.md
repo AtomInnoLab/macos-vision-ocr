@@ -61,6 +61,14 @@ Process with custom output directory:
 ./macos-vision-ocr --img ./images/handwriting.webp --output ./images
 ```
 
+### Set Recognition Languages
+
+Recognition languages can be specified using the `--rec-langs` option. For example:
+
+```bash
+./macos-vision-ocr --img ./images/handwriting.webp --rec-langs "zh-Hans, zh-Hant, en-US"
+```
+
 ### Batch Processing
 
 Process multiple images in a directory:

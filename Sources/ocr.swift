@@ -31,6 +31,9 @@ struct MacOSVisionOCR: ParsableCommand {
     @Flag(name: .long, help: "Show supported recognition languages")
     var lang = false
 
+    @Option(name: .long, help: "Recognition languages")
+    var recLangs: String?
+
     var revision: Int {
         var REVISION: Int
         if #available(macOS 13, *) {
@@ -204,7 +207,18 @@ struct MacOSVisionOCR: ParsableCommand {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
-        request.recognitionLanguages = getSupportedLanguages()
+        
+        // Use recLangs if provided, otherwise use supported languages
+        if let recLangs = recLangs {
+            let languages = recLangs
+                .components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            request.recognitionLanguages = languages
+        } else {
+            request.recognitionLanguages = getSupportedLanguages()
+        }
+        
         request.revision = revision
         
         request.minimumTextHeight = 0.01
@@ -277,7 +291,6 @@ struct MacOSVisionOCR: ParsableCommand {
         for observation in observations {
             guard let quad = observation["quad"] as? [String: [String: CGFloat]] else { continue }
             
-            // 修改绘制四边形的代码
             let topLeft = CGPoint(x: quad["topLeft"]!["x"]! * size.width, y: (1 - quad["topLeft"]!["y"]!) * size.height)
             let topRight = CGPoint(x: quad["topRight"]!["x"]! * size.width, y: (1 - quad["topRight"]!["y"]!) * size.height)
             let bottomRight = CGPoint(x: quad["bottomRight"]!["x"]! * size.width, y: (1 - quad["bottomRight"]!["y"]!) * size.height)
