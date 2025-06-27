@@ -33,16 +33,26 @@ cd macos-vision-ocr
 
 3. Build for your architecture:
 
-For Apple Silicon (arm64):
+Use the provided build script to automatically generate architecture-specific executables:
 
 ```bash
-swift build -c release --arch arm64
+./build.sh
 ```
 
-For Intel (x86_64):
+This will generate:
+- `.build/debug/ocr-aarch64-apple-darwin` (for Apple Silicon)
+- `.build/release/ocr-aarch64-apple-darwin` (for Apple Silicon)
+- `.build/debug/ocr-x86_64-apple-darwin` (for Intel)
+- `.build/release/ocr-x86_64-apple-darwin` (for Intel)
+
+Alternatively, you can build manually:
 
 ```bash
-swift build -c release --arch x86_64
+# For debug build
+swift build
+
+# For release build
+swift build -c release
 ```
 
 ## Usage
@@ -52,13 +62,13 @@ swift build -c release --arch x86_64
 Process a single image and output to console:
 
 ```bash
-./macos-vision-ocr --img ./images/handwriting.webp
+.build/debug/ocr-aarch64-apple-darwin --img ./images/handwriting.webp
 ```
 
 Process with custom output directory:
 
 ```bash
-./macos-vision-ocr --img ./images/handwriting.webp --output ./images
+.build/debug/ocr-aarch64-apple-darwin --img ./images/handwriting.webp --output ./images
 ```
 
 ### Set Recognition Languages
@@ -66,7 +76,7 @@ Process with custom output directory:
 Recognition languages can be specified using the `--rec-langs` option. For example:
 
 ```bash
-./macos-vision-ocr --img ./images/handwriting.webp --rec-langs "zh-Hans, zh-Hant, en-US"
+.build/debug/ocr-aarch64-apple-darwin --img ./images/handwriting.webp --rec-langs "zh-Hans, zh-Hant, en-US"
 ```
 
 ### Batch Processing
@@ -74,13 +84,13 @@ Recognition languages can be specified using the `--rec-langs` option. For examp
 Process multiple images in a directory:
 
 ```bash
-./macos-vision-ocr --img-dir ./images --output-dir ./output
+.build/debug/ocr-aarch64-apple-darwin --img-dir ./images --output-dir ./output
 ```
 
 Merge all results into a single file:
 
 ```bash
-./macos-vision-ocr --img-dir ./images --output-dir ./output --merge
+.build/debug/ocr-aarch64-apple-darwin --img-dir ./images --output-dir ./output --merge
 ```
 
 ### Debug Mode
@@ -88,7 +98,7 @@ Merge all results into a single file:
 Enable debug mode to visualize text detection:
 
 ```bash
-./macos-vision-ocr --img ./images/handwriting.webp --debug
+.build/debug/ocr-aarch64-apple-darwin --img ./images/handwriting.webp --debug
 ```
 
 ![handwriting_boxes.png](./images/handwriting_boxes.png)
@@ -185,8 +195,8 @@ const execPromise = util.promisify(exec);
 
 async function performOCR(imagePath, outputDir = null) {
   try {
-    // Construct the command
-    let command = `./macos-vision-ocr --img "${imagePath}"`;
+    // Construct the command - use the appropriate architecture-specific executable
+    let command = `./.build/debug/ocr-aarch64-apple-darwin --img "${imagePath}"`;
     if (outputDir) {
       command += ` --output "${outputDir}"`;
     }

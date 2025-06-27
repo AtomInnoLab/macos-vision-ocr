@@ -3,10 +3,19 @@ import Vision
 import ArgumentParser
 import Foundation
 
+func convertCIImageToCGImage(inputImage: CIImage) -> CGImage? {
+    let context = CIContext(options: nil)
+    if let cgImage = context.createCGImage(inputImage, from: inputImage.extent) {
+        return cgImage
+    }
+    return nil
+}
+
+
 @main
 struct MacOSVisionOCR: ParsableCommand {
     static var configuration = CommandConfiguration(
-        commandName: "macos-vision-ocr",
+        commandName: "ocr",
         abstract: "Perform OCR on single image or batch of images"
     )
 
@@ -90,16 +99,7 @@ struct MacOSVisionOCR: ParsableCommand {
     }
     
     private func getSupportedLanguages() -> [String] {
-        if #available(macOS 13, *) {
-            let request = VNRecognizeTextRequest()
-            do {
-                return try request.supportedRecognitionLanguages()
-            } catch {
-                return ["zh-Hans", "zh-Hant", "en-US", "ja-JP"]
-            }
-        } else {
-            return ["zh-Hans", "zh-Hant", "en-US", "ja-JP"]
-        }
+        return ["zh-Hans", "zh-Hant", "en-US", "ja-JP"]
     }
     
     mutating func run() throws {
@@ -196,11 +196,11 @@ struct MacOSVisionOCR: ParsableCommand {
     }
 
     private func extractText(from imagePath: String) throws -> String {
-        guard let img = NSImage(byReferencingFile: imagePath) else {
+        guard let ciImage = CIImage(contentsOf: URL(fileURLWithPath: imagePath)) else {
             throw OCRError.imageLoadFailed(path: imagePath)
         }
-        
-        guard let cgImage = img.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+
+        guard let cgImage = convertCIImageToCGImage(inputImage: ciImage) else {
             throw OCRError.imageConversionFailed(path: imagePath)
         }
 
@@ -210,11 +210,15 @@ struct MacOSVisionOCR: ParsableCommand {
         
         // Use recLangs if provided, otherwise use supported languages
         if let recLangs = recLangs {
-            let languages = recLangs
-                .components(separatedBy: ",")
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-            request.recognitionLanguages = languages
+            if recLangs == "auto" {
+                request.recognitionLanguages = getSupportedLanguages()
+            } else {
+                let languages = recLangs
+                    .components(separatedBy: ",")
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+                request.recognitionLanguages = languages
+            }
         } else {
             request.recognitionLanguages = getSupportedLanguages()
         }
